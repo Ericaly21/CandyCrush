@@ -1,0 +1,89 @@
+/* Copyright (c) 2017 MIT 6.813/6.831 course staff, all rights reserved.
+ * Redistribution of original or derived work requires permission of course staff.
+ */
+/* #mainColumn {
+  outline: 1px dashed orange;
+  height: 200px;
+} */
+
+
+body {
+	margin: auto;
+	vertical-align: middle;
+	font-weight: bold;
+	text-align: center;
+}
+
+/* The game title (bold and colored) */
+#game_title {
+	font-weight: bold;
+	color: red;
+}
+
+/* The game board should have a fixed size of 320x320 pixels 
+(to encourage a mobile friendly layout). It should have 8 rows and each row should have 8 squares.  */
+#board_game {
+	margin: auto;
+	width: 320px;
+	height: 320px;
+	table-layout: fixed;
+}
+
+#firstColumn, #mainColumn, #lastColumn {
+	margin: auto;
+	padding: 10px;
+}
+
+/* game arrows */
+#game_arrows {
+	margin: 10px auto;
+}
+
+#candy_input:hover, #candy_input:focus {
+	box-shadow: 0 0 5px blue;
+}
+
+#candy_input {
+	width: 50px;
+}
+
+.btn {
+	border: 1px solid #4b4a4a;
+	box-shadow: 1px 1px 5px rgb(97, 97, 97);
+}
+
+.btn:disabled {
+	background-color: #d3d3d3e7;
+}
+
+.red_candy, .orange_candy, .green_candy, .blue_candy, .purple_candy, .yellow_candy {
+	display: table;
+	color: white;
+	width: 100%;
+	height: 100%;
+}
+
+.red_candy {
+    background-color: red;
+}
+
+.blue_candy {
+    background-color: blue;
+}
+
+.yellow_candy {
+	background-color: yellow;
+	color: rgba(128, 128, 128, 0.638);
+}
+
+.purple_candy {
+	background-color: purple;
+}
+
+.orange_candy {
+	background-color: orange;
+}
+
+.green_candy {
+	background-color: green;
+}

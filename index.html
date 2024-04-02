@@ -1,0 +1,307 @@
+<!--
+CandyCrush
+Your Name: Erica Ly
+Collaborators: None
+References: For .prop() https://www.w3schools.com/jquery/html_prop.asp
+oninput : https://www.w3schools.com/jsref/event_oninput.asp
+arrows: https://www.w3schools.com/charsets/ref_utf_arrows.asp
+watched some basic html and CSS Youtube videos:
+and read the project document given as well as references some of those links
+-->
+<!DOCTYPE html>
+<html>
+<!--
+/* Copyright (c) 2017 MIT 6.813/6.831 course staff, all rights reserved.
+ * Redistribution of original or derived work requires permission of course staff.
+ */
+-->
+
+<head>
+<meta charset="utf-8">
+<title>CandyCrush</title>
+
+<!-- Load style sheets -->
+<link rel="stylesheet" href=
+  "https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.css">
+
+<link rel="stylesheet" href="mainLayout.css">
+
+<!-- Use mobile-aware viewport -->
+<meta name="viewport" content=
+  "width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<!-- Load any supplemental Javascript libraries here -->
+<script src=
+  "https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src=
+  "https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.2/seedrandom.js">
+</script>
+<script src="candy.js"></script>
+<script src="board.js"></script>
+<script src="rules.js"></script>
+
+<script>
+
+// By default, the first board loaded by your page will be the same 
+// each time you load (which is accomplished by "seeding" the random
+// number generator. This makes testing (and grading!) easier!
+Math.seedrandom(0);
+
+// A short jQuery extension to read query parameters from the URL.
+$.extend({
+  getUrlVars: function() {
+    var vars = [], pair;
+    var pairs = window.location.search.substr(1).split('&');
+    for (var i = 0; i < pairs.length; i++) {
+      pair = pairs[i].split('=');
+      vars.push(pair[0]);
+      vars[pair[0]] = pair[1] &&
+          decodeURIComponent(pair[1].replace(/\+/g, ' '));
+    }
+    return vars;
+  },
+  getUrlVar: function(name) {
+    return $.getUrlVars()[name]; }
+});
+
+// constants
+var DEFAULT_BOARD_SIZE = 8;
+// data model at global scope for easier debugging
+var board;
+var rules;
+// initialize board
+const boardSize = ($.getUrlVar('size') && $.getUrlVar('size') >= 3) ? $.getUrlVar('size') : DEFAULT_BOARD_SIZE;
+board = new Board(boardSize);
+
+// load a rule
+rules = new Rules(board);
+var lowercaseLetter = "";
+var boardNumber = "";
+
+// helper functions: 
+// check if candies are ready to be crushed
+function check_crush() {
+	if (rules.getCandyCrushes().length == 0) {
+		enable_button(false);
+	} else {
+		enable_button(true);
+	}
+}
+
+function MoveCandy(direction) {
+	var placement = move_candy.value.toLowerCase();
+	var div = $("div").find("[data-placement='" + placement + "']");
+	if (div != null) {
+		var candy = div.data("candy");
+		// To test if the move is valid, call the rules.isMoveTypeValid method. 
+		// If the move is valid, call board.flipCandies which will actually flip the candies.
+		if(rules.isMoveTypeValid(candy, direction)){
+			// You may find the board.getCandyInDirection method useful. You should not crush the candies in this step.
+			var candy2 = board.getCandyInDirection(candy, direction);
+			// flipCandies method issues a move event, so you will also need to implement the "move" event listener. 
+			board.flipCandies(candy, candy2);
+            enable_play_buttons	(false);
+			enable_button(true);	
+		}
+	}
+}
+
+function crush_once() {
+	enable_play_buttons(false);
+	rules.removeCrushes(rules.getCandyCrushes());
+	setTimeout(function() {
+		rules.moveCandiesDown();
+	}, 500);
+				
+	check_crush();
+}
+
+function prepare_new_game() {
+	board.clear();
+	// call function prepareNewGame() from rules.
+	rules.prepareNewGame();
+	move_candy.focus();
+}
+
+// The Crush Once button should be validated just like the arrows.
+// When there is nothing to crush, it should be disabled. 
+// When there is something to crush, it should be enabled, and the arrow buttons should also be disabled. 
+function enable_play_buttons(en) {
+    $(".arrow").prop("disable", !en);
+}	
+
+function enable_button(en) {
+    $("#crush_once").prop("disabled", !en);
+}
+
+// Final initialization entry point: the Javascript code inside this block
+// runs at the end of start-up when the page has finished loading.
+$(document).ready(function() {
+  // Your code here.
+  move_candy = document.getElementById("candy_input");
+  create_board();
+  enable_play_buttons(false);
+  enable_button(false);
+});
+
+/* Event Handlers */
+// access the candy object with info.candy
+// add a candy to the board
+$(board).on('add', function(e, info) {
+    var candy = $('<div>')
+        .data("candy", info.candy)
+        .addClass("candy " + info.candy.color + "_candy")
+        .attr("id", "candy-id-" + info.candy.id);
+    var placement = String.fromCharCode(info.candy.col + 97) + (info.candy.row + 1);
+    candy.attr("data-placement", placement).text(placement);
+    $("#board_game").children().eq(info.candy.row).children().eq(info.candy.col).append(candy);
+    check_crush();
+});
+
+// move a candy on the board
+$(board).on('move', function(e, info) {
+    var MoveCandy = document.getElementById("candy-id-" + info.candy.id);
+    MoveCandy.parentNode.removeChild(MoveCandy);
+    var div = document.createElement('div');
+    $(div).data("candy", info.candy)
+        .addClass("candy " + info.candy.color + "_candy")
+        .attr("id", "candy-id-" + info.candy.id);
+
+    var lowercaseLetter = String.fromCharCode(info.candy.col + 97);
+    var boardNumber = (info.candy.row + 1).toString();
+    $(div).attr("data-placement", lowercaseLetter + boardNumber).text(lowercaseLetter + boardNumber);
+    var row = $("#board_game").children()[info.candy.row];
+    var box = $(row).children()[info.candy.col];
+    box.append(div);
+    check_crush();
+});
+
+// remove a candy from the board
+$(board).on('remove', function(e, info) {
+    var rem = document.getElementById("candy-id-" + info.candy.id);
+    rem.parentNode.removeChild(rem);
+});
+
+// move a candy on the board
+$(board).on('scoreUpdate', function(e, info) {
+  // Your code here.
+  console.log("Update the score")
+});
+
+// Button Events
+$(document).on('click', ".btn", function(move_event) {
+	// Your code here.
+  var id = move_event.target.id;
+  console.log(id);
+  if (id == "prepare_new_game") {
+    prepare_new_game();
+  } else if (id == "crush_once") {
+    crush_once();
+  } else if (["up", "left", "right", "down"].includes(id)) {
+    MoveCandy(id);
+  }
+  move_candy.value = '';
+  move_candy.focus();
+});
+
+// When the user clicks on the up/down/left/right buttons, 
+// the text from the textfield should be read by your program and the corresponding candy moved, 
+// if the move is valid according to the rules
+$(document).on('keydown', function(move_event) {
+// Your code here.
+if (move_event.originalEvent.key == "new") {
+	prepare_new_game();
+	move_candy.value = '';
+	move_candy.focus();
+} else if (move_event.originalEvent.key == "up") {  // move up
+	MoveCandy("up");
+	move_candy.value = '';
+	move_candy.focus();
+} else if (move_event.originalEvent.key == "down") {  // move down
+	MoveCandy("down");
+	move_candy.value = '';
+	move_candy.focus();
+} else if (move_event.originalEvent.key == "right") {  // move right
+	MoveCandy("right");
+	move_candy.value = '';
+	move_candy.focus();
+} else if (move_event.originalEvent.key == "left") {  // move left
+	MoveCandy("left");
+	move_candy.value = '';
+	move_candy.focus();
+} else if (move_event.originalEvent.keyCode == 35) { // space
+	crush_once();
+	move_candy.value = '';
+	move_candy.focus();
+}});
+
+// The up/down/left/right buttons should only be enabled once 
+// the user has typed something into the text field that is a valid entry.
+function user_input() {
+    const validInput = move_candy.validity.valid && move_candy.value !== "";
+    enable_play_buttons(validInput);
+    const boxShadowColor = validInput ? "green" : "red";
+    $(move_candy).css("box-shadow", `0 0 15px ${boxShadowColor}`);
+    if (!validInput && (move_candyt.value.toLowerCase() === "new" || move_candy.value === " ")) {
+        move_candy.value = "";
+    }
+}
+
+function create_board() {
+	const board_game = $('#board_game');
+    board_game.empty();
+    for (var board_row = 0; board_row < board.boardSize; board_row ++) {
+        var tr = $("<tr></tr>");
+        board_game.append(tr);
+        for (var columns = 0; columns < board.boardSize; columns++) {
+            tr.append("<td></td>");
+        }
+    }
+}
+
+</script>
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-4" id="firstColumn">
+					<h1 id="game_title">Candy Crush</h1>
+					<input class="btn btn-default" type="button" id="prepare_new_game" value="New Game">
+				</div>
+				<div class="col-md-4" id="mainColumn">
+					<table id="board_game">
+					</table>
+				</div>
+				<div class="col-md-4" id="lastColumn">
+					<div class="col-md-6">
+						<form action="">
+							Move: <input type="text" maxlength="2" id="candy_input" value="" oninput="user_input()">
+						</form>
+					</div>
+					<div class="col-md-5">
+						<table id="game_arrows">
+							<tr>
+								<td></td>
+								<td><input class="btn btn-default arrow" type="button" id="up" value="&uarr;"></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><input class="btn btn-default arrow" type="button" id="left" value="&larr;"></td>
+								<td></td>
+								<td><input class="btn btn-default arrow" type="button" id="right" value="&rarr;"></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td><input class="btn btn-default arrow" type="button" id="down" value="&darr;"></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+					<div class="col-md-6">
+						<input class="btn btn-default" type="button" id="crush_once" value="Crush Once">
+					</div>
+				</div>
+			</div> 
+		</div>
+	</body>
+</html>
